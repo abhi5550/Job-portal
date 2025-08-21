@@ -10,64 +10,81 @@ const experience = [
   { min: 0, max: 1 },
   { min: 2, max: 3 },
   { min: 4, max: 5 },
-  { min: 5, max: 10 },
+  { min: 6, max: 10 }, // note: original had overlap 5 — adjust as needed
 ];
 
+const STORAGE_KEY = "savedJob"; // consistent key
+
 const Jobs = () => {
-  const JobData = JSON.parse(localStorage.getItem("item")) || [];
-  const [filteredJobs, setFilteredJobs] = useState([...JobData, ...Job]);
-  const [searchterm, setSearchTerm] = useState("");
+  // load saved job (single item) or null
+  const savedJobFromStorage = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+  const JobData = JSON.parse(localStorage.getItem("item") || "[]"); // keep this if you intentionally store "item" elsewhere
+
+  const [filteredJobs, setFilteredJobs] = useState(() => {
+    // initialise with local saved + jobs.json (avoid mutation)
+    return [...JobData, ...Job];
+  });
+
+  const [searchTerm, setSearchTerm] = useState("");
   const [active, setActive] = useState(false);
+
   function handleJobFilter(event) {
     const value = event.target.innerText;
     event.preventDefault();
-    setFilteredJobs(
-      Job.filter((job) => {
-        return job.role === value;
-      })
-    );
+    setFilteredJobs(Job.filter((job) => job.role === value));
   }
-  function saveClick(id, logo, company, position, location, posted) {
-    window.localStorage.setItem(
-      "Job",
-      JSON.stringify(id, logo, company, position, location, posted)
-    );
-    console.log(JobData);
+
+  // saveClick will accept a job object and save to localStorage
+  function saveClick(job) {
+    if (!job) return;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(job));
+    setActive((prev) => !prev); // toggle active
+    // optional: update state to reflect that this job is saved
+    // console.log("Saved job:", job);
   }
+
   const searchEvent = (event) => {
-    const data = event.target.value;
+    const data = event.target.value || "";
     setSearchTerm(data);
-    if (searchterm !== "" || searchterm.length > 2) {
+
+    // use the fresh `data` (not state which is async)
+    if (data !== "" && data.length > 2) {
       const filterData = Job.filter((item) => {
-        if (item) {
-          return Object.values(item)
-            .join("")
-            .toLowerCase()
-            .includes(searchterm.toLowerCase());
-        } else {
-          return 0;
-        }
+        if (!item) return false;
+        // join values safely (skip objects)
+        const joined = Object.values(item)
+          .map((v) => (typeof v === "object" ? JSON.stringify(v) : String(v)))
+          .join(" ");
+        return joined.toLowerCase().includes(data.toLowerCase());
       });
       setFilteredJobs(filterData);
     } else {
       setFilteredJobs(Job);
     }
   };
+
   function handleExperienceFilter(checkedState) {
     let filters = [];
-    checkedState.forEach((item, index) => {
-      if (item === true) {
-        const filterS = Job.filter((job) => {
-          return (
-            job.experience >= experience[index].min &&
-            job.experience <= experience[index].max
-          );
+    checkedState.forEach((checked, index) => {
+      if (checked) {
+        const matched = Job.filter((job) => {
+          // ensure job.experience is a number
+          const exp = Number(job.experience);
+          return exp >= experience[index].min && exp <= experience[index].max;
         });
-        filters = [...filters, ...filterS];
+        filters = [...filters, ...matched];
       }
-      setFilteredJobs(filters);
     });
+    // remove duplicates by id (optional)
+    const unique = Object.values(
+      filters.reduce((acc, j) => {
+        acc[j.id] = j;
+        return acc;
+      }, {})
+    );
+    setFilteredJobs(unique);
   }
+
   return (
     <>
       <Navbar />
@@ -77,23 +94,29 @@ const Jobs = () => {
             <h2>Our Jobs</h2>
           </div>
         </div>
+
         <div className="job-section">
           <div className="job-page">
-            {filteredJobs.map(
-              ({ id, logo, company, position, location, posted, role }) => {
+            {filteredJobs && filteredJobs.length > 0 ? (
+              filteredJobs.map(({ id, logo, company, position, location, posted, role }) => {
+                // safe check for logo string
+                const isUrlLogo = typeof logo === "string" && logo.length > 20;
+                let logoSrc;
+                try {
+                  logoSrc = isUrlLogo ? logo : require(`../../Assets/images/${logo}`);
+                } catch (err) {
+                  // fallback in case require fails
+                  logoSrc = "/fallback-logo.png";
+                }
+
+                const savedJob = savedJobFromStorage;
+                const isSaved = savedJob && savedJob.id === id;
+
                 return (
-                  <div className="job-list">
+                  <div className="job-list" key={id}>
                     <div className="job-card">
                       <div className="job-name">
-                        <img
-                          src={
-                            logo.length > 20
-                              ? logo
-                              : require(`../../Assets/images/${logo}`)
-                          }
-                          alt="logo"
-                          className="job-profile"
-                        />
+                        <img src={logoSrc} alt="logo" className="job-profile" />
                         <div className="job-detail">
                           <h4>{company}</h4>
                           <h3>{position}</h3>
@@ -103,40 +126,30 @@ const Jobs = () => {
                           </div>
                         </div>
                       </div>
+
                       <div className="job-button">
                         <div className="job-posting">
                           <Link to="/apply-jobs">Apply Now</Link>
                         </div>
+
                         <div className="save-button">
-                          <Link
-                            to="/Jobs"
-                            onClick={() => {
-                              saveClick(
-                                {
-                                  id,
-                                  logo,
-                                  company,
-                                  position,
-                                  location,
-                                  posted,
-                                },
-                                setActive(!active)
-                              );
-                            }}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              saveClick({ id, logo, company, position, location, posted })
+                            }
+                            className="save-btn"
                           >
-                            {JSON.parse(localStorage.getItem("Job"))?.id ===
-                            id ? (
-                              <AiFillHeart />
-                            ) : (
-                              <AiOutlineHeart />
-                            )}
-                          </Link>
+                            {isSaved ? <AiFillHeart /> : <AiOutlineHeart />}
+                          </button>
                         </div>
                       </div>
                     </div>
                   </div>
                 );
-              }
+              })
+            ) : (
+              <p>No jobs found.</p>
             )}
           </div>
 

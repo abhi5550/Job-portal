@@ -180,6 +180,7 @@ export default function Discussion() {
                     src={imageUrl}
                     data-testid="image-preview"
                     className={`${imageUrl ? "image-text-editor" : ""}`}
+                    alt="Url-preview"
                   />
                 )}
               </div>
