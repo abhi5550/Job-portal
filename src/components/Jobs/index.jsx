@@ -38,14 +38,14 @@ const Jobs = () => {
   function saveClick(job) {
     if (!job) return;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(job));
-    setActive((prev) => !prev); // toggle active
+    // setActive((prev) => !prev); // toggle active
     // optional: update state to reflect that this job is saved
     // console.log("Saved job:", job);
   }
 
   const searchEvent = (event) => {
     const data = event.target.value || "";
-    setSearchTerm(data);
+    // setSearchTerm(data);
 
     // use the fresh `data` (not state which is async)
     if (data !== "" && data.length > 2) {
