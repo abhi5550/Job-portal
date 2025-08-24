@@ -52,6 +52,7 @@ const CommentCard = ({ value, deleteComment }) => {
               {imageUrl && (
                 <img
                   src={imageUrl}
+                  alt="image-preview"
                   data-testid="image-preview"
                   className={`${imageUrl ? "image-text-editor" : ""}`}
                   style={{ width: "150px" }}

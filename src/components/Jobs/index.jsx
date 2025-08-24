@@ -25,8 +25,8 @@ const Jobs = () => {
     return [...JobData, ...Job];
   });
 
-  const [searchTerm, setSearchTerm] = useState("");
-  const [active, setActive] = useState(false);
+  // const [searchTerm, setSearchTerm] = useState("");
+  // const [active, setActive] = useState(false);
 
   function handleJobFilter(event) {
     const value = event.target.innerText;
