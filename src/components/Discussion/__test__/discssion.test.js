@@ -10,7 +10,7 @@ jest.spyOn(window, "alert").mockImplementation(() => {});
 const MockComment = ({ deleteComment }) => {
   const commentValue = {
     _id: "syPd8qVyCPoQD7dljzzFdA",
-    name: "Himanshu",
+    name: "Abhinav",
     rating: "0",
     content: "https://www.w3schools.com/css/img_lights.jpg\nHello",
   };
